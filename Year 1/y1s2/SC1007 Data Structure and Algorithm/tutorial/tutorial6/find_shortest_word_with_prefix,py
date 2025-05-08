@@ -1,0 +1,157 @@
+class Stack:
+    def __init__(self):
+        self.items = []
+
+    def push(self, item):
+        self.items.append(item)
+
+    def pop(self):
+        if self.is_empty():
+            return None
+        return self.items.pop()
+
+    def is_empty(self):
+        return len(self.items) == 0
+
+
+class Queue:
+    def __init__(self):
+        self.items = []
+
+    def enqueue(self, item):
+        self.items.append(item)
+
+    def dequeue(self):
+        if not self.is_empty():
+            return self.items.pop(0)
+        return None
+
+    def is_empty(self):
+        return len(self.items) == 0
+
+
+class TrieNode:
+    def __init__(self, char=''):
+        self.char = char
+        self.is_end_of_word = False
+        self.first_child = None
+        self.next_sibling = None
+
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def _find_child(self, node, char):
+        curr = node.first_child
+        while curr:
+            if curr.char == char:
+                return curr
+            curr = curr.next_sibling
+        return None
+
+    def _insert_child(self, node, char):
+        prev = None
+        curr = node.first_child
+        while curr and curr.char < char:
+            prev = curr
+            curr = curr.next_sibling
+        if curr and curr.char == char:
+            return curr  # already exists
+        new_node = TrieNode(char)
+        new_node.next_sibling = curr
+        if prev:
+            prev.next_sibling = new_node
+        else:
+            node.first_child = new_node
+        return new_node
+
+    def insert(self, word):
+        current = self.root
+        for char in word:
+            current = self._insert_child(current, char)
+        current.is_end_of_word = True
+
+    def find_shortest_word_with_prefix(self, node, prefix):
+        # Your implementation goes here
+        queue = Queue()
+        results = []
+        min_len = float('inf')
+
+        queue.enqueue((node, prefix))
+        while not queue.is_empty():
+            popped_node, popped_prefix = queue.dequeue()
+            # if reach end of word:
+            if popped_node.is_end_of_word:
+                #  length of current prefix less than min length
+                if len(popped_prefix) < min_len:
+                    # update current length to min length
+                    min_len = len(popped_prefix)
+                    # reset results with the new shortest word
+                    results = [popped_prefix]
+
+                elif len(popped_prefix) == min_len:
+                    results.append(popped_prefix)
+            child = popped_node.first_child
+            while child:
+                queue.enqueue((child, popped_prefix+child.char))
+                child = child.next_sibling
+        if results:
+            return results
+        else:
+            return None
+
+    def find_shortest_word_with_prefix_solution(self, prefix):
+        node = self.root
+        shortest_words = []
+        min_depth = None
+
+        # Step 1: Traverse to end of prefix
+        for char in prefix:
+            node = self._find_child(node, char)
+        if not node:
+            return None
+        
+        queue = Queue()
+        queue.enqueue((node, prefix, 0))
+        while not queue.is_empty():
+            current_node, word, depth = queue.dequeue()
+
+            if current_node.is_end_of_word :
+                if min_depth is None:
+                    min_depth = depth
+                if depth == min_depth:
+                    shortest_words.append(word)
+                elif depth > min_depth:
+                    break
+            if min_depth is not None and depth >= min_depth:
+                continue
+            
+            child = node.first_child
+            while child:
+                queue.enqueue((child, word + child.char, depth+1))
+                child = current_node.next_sibling
+        return shortest_words
+
+
+if __name__ == "__main__":
+    trie = Trie()
+    words = ["care", "cat", "cap", "bat", "ball", "car", "cart"]
+    for word in words:
+        trie.insert(word)
+
+    sample_prefixes = ["ca", "ba", "z"]
+
+    for prefix in sample_prefixes:
+        node = trie.root
+        found = True
+        for char in prefix:
+            node = trie._find_child(node, char)
+            if not node:
+                found = False
+                break
+        if not found:
+            print(f"No word with prefix '{prefix}'")
+        else:
+            result = trie.find_shortest_word_with_prefix(node, prefix)
+            print(f"Shortest word with prefix '{prefix}': {result}")
